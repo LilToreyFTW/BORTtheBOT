@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { trpc } from "@/utils/trpc";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useCallback, useRef, useState } from "react";
+import { PrinterViewer } from "@/components/viewer/PrinterViewer";
+import { RobotBuilderSim } from "@/components/viewer/RobotBuilderSim";
 
 export const Route = createFileRoute("/builder")({
     component: BuilderPage,
@@ -84,6 +86,11 @@ function BuilderPage() {
                                             : "Calibration failed",
                                     );
                                 }} />
+                                <PrinterViewer specs={b.specs.printer} calibration={calibrate.data as any} />
+                                <RobotBuilderSim
+                                    plateSizeCm={{ w: b.specs.printer.basePlateMm.w / 10, d: b.specs.printer.basePlateMm.d / 10 }}
+                                    enclosureHeightCm={b.specs.printer.enclosureCm.h}
+                                />
                             </Card>
                         ))
                     ) : (
