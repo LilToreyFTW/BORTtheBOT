@@ -175,25 +175,182 @@ export function PrinterViewer({ specs, calibration }: { specs: PrinterSpecs; cal
         // Axes helper
         scene.add(new THREE.AxesHelper(50));
 
-        // Enclosure box (wireframe)
+        // # UPDATED: Detailed machinery models
+        
+        // Enclosure dimensions
         const encW = specs.enclosureCm.w;
         const encH = specs.enclosureCm.h;
         const encD = specs.enclosureCm.d;
-        const encGeom = new THREE.BoxGeometry(encW, encH, encD);
-        const encMat = new THREE.MeshBasicMaterial({ color: 0x3a86ff, wireframe: true });
-        const enc = new THREE.Mesh(encGeom, encMat);
-        enc.position.set(0, encH / 2, 0);
-        scene.add(enc);
-
-        // Base plate (thin box) in cm
+        
+        // # ADDED: Structural frame/support columns (4 corners)
+        const frameMat = new THREE.MeshStandardMaterial({ color: 0x4a5568, metalness: 0.9, roughness: 0.1 });
+        const frameWidth = 2; // 2cm thick columns
+        const frameGroup = new THREE.Group();
+        
+        const corners = [
+            { x: -encW / 2 + frameWidth / 2, z: -encD / 2 + frameWidth / 2 },
+            { x: encW / 2 - frameWidth / 2, z: -encD / 2 + frameWidth / 2 },
+            { x: encW / 2 - frameWidth / 2, z: encD / 2 - frameWidth / 2 },
+            { x: -encW / 2 + frameWidth / 2, z: encD / 2 - frameWidth / 2 },
+        ];
+        
+        corners.forEach((corner) => {
+            const column = new THREE.Mesh(
+                new THREE.BoxGeometry(frameWidth, encH, frameWidth),
+                frameMat
+            );
+            column.position.set(corner.x, encH / 2, corner.z);
+            frameGroup.add(column);
+        });
+        
+        // # ADDED: Horizontal frame beams (top and bottom)
+        const beamHeight = 1.5;
+        const topBeam = new THREE.Mesh(
+            new THREE.BoxGeometry(encW - frameWidth, beamHeight, encD - frameWidth),
+            frameMat
+        );
+        topBeam.position.set(0, encH - beamHeight / 2, 0);
+        frameGroup.add(topBeam);
+        
+        const bottomBeam = new THREE.Mesh(
+            new THREE.BoxGeometry(encW - frameWidth, beamHeight, encD - frameWidth),
+            frameMat
+        );
+        bottomBeam.position.set(0, beamHeight / 2, 0);
+        frameGroup.add(bottomBeam);
+        
+        scene.add(frameGroup);
+        
+        // # ADDED: Side panels (clear material to show internals)
+        const panelMat = new THREE.MeshStandardMaterial({ 
+            color: 0x2d3748, 
+            metalness: 0.3, 
+            roughness: 0.7,
+            transparent: true,
+            opacity: 0.3
+        });
+        const panelThickness = 0.5;
+        
+        // Front panel
+        const frontPanel = new THREE.Mesh(
+            new THREE.BoxGeometry(encW, encH, panelThickness),
+            panelMat
+        );
+        frontPanel.position.set(0, encH / 2, encD / 2 - panelThickness / 2);
+        scene.add(frontPanel);
+        
+        // Back panel
+        const backPanel = new THREE.Mesh(
+            new THREE.BoxGeometry(encW, encH, panelThickness),
+            panelMat
+        );
+        backPanel.position.set(0, encH / 2, -encD / 2 + panelThickness / 2);
+        scene.add(backPanel);
+        
+        // Side panels
+        const leftPanel = new THREE.Mesh(
+            new THREE.BoxGeometry(panelThickness, encH, encD),
+            panelMat
+        );
+        leftPanel.position.set(-encW / 2 + panelThickness / 2, encH / 2, 0);
+        scene.add(leftPanel);
+        
+        const rightPanel = new THREE.Mesh(
+            new THREE.BoxGeometry(panelThickness, encH, encD),
+            panelMat
+        );
+        rightPanel.position.set(encW / 2 - panelThickness / 2, encH / 2, 0);
+        scene.add(rightPanel);
+        
+        // # ADDED: Roof panel with mounting points
+        const roofPanel = new THREE.Mesh(
+            new THREE.BoxGeometry(encW, 2, encD),
+            new THREE.MeshStandardMaterial({ color: 0x1a202c, metalness: 0.8, roughness: 0.2 })
+        );
+        roofPanel.position.set(0, encH - 1, 0);
+        scene.add(roofPanel);
+        
+        // # UPDATED: Base plate - detailed with mounting hardware
         const plateW = specs.basePlateMm.w / 10;
         const plateD = specs.basePlateMm.d / 10;
-        const plateH = 1; // 1 cm visual thickness
+        const plateH = specs.basePlateMm.h / 10; // Use actual height from specs
+        
+        // Main base plate (900x900x900 mm = 90x90x90 cm)
         const plateGeom = new THREE.BoxGeometry(plateW, plateH, plateD);
-        const plateMat = new THREE.MeshStandardMaterial({ color: 0x778da9, metalness: 0.8, roughness: 0.2 });
+        const plateMat = new THREE.MeshStandardMaterial({ 
+            color: 0x718096, 
+            metalness: 0.95, 
+            roughness: 0.1,
+            envMapIntensity: 1.0
+        });
         const plate = new THREE.Mesh(plateGeom, plateMat);
         plate.position.set(0, plateH / 2, 0);
         scene.add(plate);
+        
+        // # ADDED: Base plate mounting bolts/corners
+        const boltMat = new THREE.MeshStandardMaterial({ color: 0x4a5568, metalness: 0.9, roughness: 0.2 });
+        const boltRadius = 1.5;
+        const boltHeight = 3;
+        const boltGeom = new THREE.CylinderGeometry(boltRadius, boltRadius, boltHeight, 16);
+        
+        const plateCorners = [
+            { x: -plateW / 2 + 5, z: -plateD / 2 + 5 },
+            { x: plateW / 2 - 5, z: -plateD / 2 + 5 },
+            { x: plateW / 2 - 5, z: plateD / 2 - 5 },
+            { x: -plateW / 2 + 5, z: plateD / 2 - 5 },
+        ];
+        
+        plateCorners.forEach((corner) => {
+            const bolt = new THREE.Mesh(boltGeom, boltMat);
+            bolt.rotation.x = Math.PI / 2;
+            bolt.position.set(corner.x, plateH + boltHeight / 2, corner.z);
+            scene.add(bolt);
+        });
+        
+        // # ADDED: Base plate surface texture/grating pattern
+        const gratingGroup = new THREE.Group();
+        const gratingMat = new THREE.MeshStandardMaterial({ 
+            color: 0x4a5568, 
+            metalness: 0.8, 
+            roughness: 0.3 
+        });
+        const gratingSpacing = 10; // 10cm spacing
+        
+        for (let x = -plateW / 2; x <= plateW / 2; x += gratingSpacing) {
+            const line = new THREE.Mesh(
+                new THREE.BoxGeometry(0.2, 0.3, plateD),
+                gratingMat
+            );
+            line.position.set(x, plateH + 0.15, 0);
+            gratingGroup.add(line);
+        }
+        
+        for (let z = -plateD / 2; z <= plateD / 2; z += gratingSpacing) {
+            const line = new THREE.Mesh(
+                new THREE.BoxGeometry(plateW, 0.3, 0.2),
+                gratingMat
+            );
+            line.position.set(0, plateH + 0.15, z);
+            gratingGroup.add(line);
+        }
+        
+        scene.add(gratingGroup);
+        
+        // # ADDED: Support rails for laser arm mounts
+        const railMat = new THREE.MeshStandardMaterial({ color: 0x2d3748, metalness: 0.9, roughness: 0.1 });
+        const railWidth = 3;
+        const railHeight = 2;
+        
+        // Mounting rails on roof
+        for (let i = 0; i < 3; i++) {
+            const railZ = -encD / 2 + (encD / 2) * i;
+            const rail = new THREE.Mesh(
+                new THREE.BoxGeometry(encW - 10, railHeight, railWidth),
+                railMat
+            );
+            rail.position.set(0, encH - railHeight / 2 - 2, railZ);
+            scene.add(rail);
+        }
 
         // # ADDED: Create rotatable laser arms with joints for 8 downward lasers
         const count = 8;
@@ -227,49 +384,125 @@ export function PrinterViewer({ specs, calibration }: { specs: PrinterSpecs; cal
             arm.shoulderGroup = new THREE.Group();
             arm.shoulderGroup.position.set(baseX, baseY, baseZ);
             
-            // Shoulder joint visual
-            const shoulderJoint = new THREE.Mesh(new THREE.SphereGeometry(2, 16, 16), jointMat);
+            // # UPDATED: Detailed shoulder joint with mounting bracket
+            const mountBracket = new THREE.Mesh(
+                new THREE.BoxGeometry(4, 3, 4),
+                new THREE.MeshStandardMaterial({ color: 0x2d3748, metalness: 0.9, roughness: 0.1 })
+            );
+            mountBracket.position.set(0, 1.5, 0);
+            arm.shoulderGroup.add(mountBracket);
+            
+            const shoulderJoint = new THREE.Mesh(new THREE.SphereGeometry(2.5, 16, 16), jointMat);
             arm.shoulderGroup.add(shoulderJoint);
+            
+            // # ADDED: Shoulder servo motor housing
+            const servoHousing = new THREE.Mesh(
+                new THREE.BoxGeometry(3.5, 2, 3.5),
+                new THREE.MeshStandardMaterial({ color: 0x1a202c, metalness: 0.8, roughness: 0.3 })
+            );
+            servoHousing.position.set(0, -1, 0);
+            arm.shoulderGroup.add(servoHousing);
 
-            // Upper arm (shoulder to elbow)
+            // # UPDATED: Upper arm with more detail
             const upperArmLen = encH * 0.4; // 40% of enclosure height
+            // Main arm segment
             arm.upperArm = new THREE.Mesh(
-                new THREE.CylinderGeometry(1.5, 2, upperArmLen, 16),
+                new THREE.CylinderGeometry(1.8, 2.2, upperArmLen, 16),
                 armMat
             );
-            arm.upperArm.rotation.z = Math.PI / 2; // Rotate to horizontal
+            arm.upperArm.rotation.z = Math.PI / 2;
             arm.upperArm.position.y = -upperArmLen / 2;
             arm.shoulderGroup.add(arm.upperArm);
+            
+            // # ADDED: Arm segment joints/couplings
+            const coupling1 = new THREE.Mesh(
+                new THREE.CylinderGeometry(2.5, 2.5, 1.5, 16),
+                jointMat
+            );
+            coupling1.rotation.z = Math.PI / 2;
+            coupling1.position.y = -upperArmLen * 0.3;
+            arm.shoulderGroup.add(coupling1);
+            
+            const coupling2 = new THREE.Mesh(
+                new THREE.CylinderGeometry(2.2, 2.2, 1.5, 16),
+                jointMat
+            );
+            coupling2.rotation.z = Math.PI / 2;
+            coupling2.position.y = -upperArmLen * 0.7;
+            arm.shoulderGroup.add(coupling2);
 
-            // Elbow joint
+            // # UPDATED: Detailed elbow joint with servo
             arm.elbowGroup = new THREE.Group();
             arm.elbowGroup.position.set(0, -upperArmLen, 0);
-            const elbowJoint = new THREE.Mesh(new THREE.SphereGeometry(1.5, 16, 16), jointMat);
+            
+            const elbowServo = new THREE.Mesh(
+                new THREE.BoxGeometry(3, 2.5, 3),
+                new THREE.MeshStandardMaterial({ color: 0x1a202c, metalness: 0.8, roughness: 0.3 })
+            );
+            arm.elbowGroup.add(elbowServo);
+            
+            const elbowJoint = new THREE.Mesh(new THREE.SphereGeometry(2, 16, 16), jointMat);
+            elbowJoint.position.y = -0.5;
             arm.elbowGroup.add(elbowJoint);
 
-            // Lower arm (elbow to wrist)
+            // # UPDATED: Lower arm with detail
             const lowerArmLen = encH * 0.35;
             arm.lowerArm = new THREE.Mesh(
-                new THREE.CylinderGeometry(1, 1.5, lowerArmLen, 16),
+                new THREE.CylinderGeometry(1.2, 1.8, lowerArmLen, 16),
                 armMat
             );
             arm.lowerArm.rotation.z = Math.PI / 2;
-            arm.lowerArm.position.y = -lowerArmLen / 2;
+            arm.lowerArm.position.y = -lowerArmLen / 2 - 0.5;
             arm.elbowGroup.add(arm.lowerArm);
+            
+            // # ADDED: Lower arm reinforcement
+            const reinforcement = new THREE.Mesh(
+                new THREE.BoxGeometry(1.5, lowerArmLen * 0.8, 1.5),
+                new THREE.MeshStandardMaterial({ color: 0x4a5568, metalness: 0.9, roughness: 0.2 })
+            );
+            reinforcement.rotation.z = Math.PI / 4;
+            reinforcement.position.y = -lowerArmLen / 2 - 0.5;
+            arm.elbowGroup.add(reinforcement);
+            
             arm.shoulderGroup.add(arm.elbowGroup);
 
-            // Wrist joint
+            // # UPDATED: Detailed wrist joint with mounting
             arm.wristGroup = new THREE.Group();
-            arm.wristGroup.position.set(0, -lowerArmLen, 0);
-            const wristJoint = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 16), jointMat);
+            arm.wristGroup.position.set(0, -lowerArmLen - 0.5, 0);
+            
+            const wristMount = new THREE.Mesh(
+                new THREE.BoxGeometry(2.5, 2, 2.5),
+                new THREE.MeshStandardMaterial({ color: 0x2d3748, metalness: 0.9, roughness: 0.1 })
+            );
+            arm.wristGroup.add(wristMount);
+            
+            const wristJoint = new THREE.Mesh(new THREE.SphereGeometry(1.5, 16, 16), jointMat);
+            wristJoint.position.y = -1;
             arm.wristGroup.add(wristJoint);
 
-            // Laser emitter head
-            const emitterGeom = new THREE.ConeGeometry(1.5, 3, 16);
-            const emitterMat = new THREE.MeshStandardMaterial({ color: 0xff0033, emissive: 0xff0033, emissiveIntensity: 0.5 });
+            // # UPDATED: Detailed laser emitter head with housing
+            const emitterHousing = new THREE.Mesh(
+                new THREE.CylinderGeometry(2, 2, 2.5, 16),
+                new THREE.MeshStandardMaterial({ color: 0x1a202c, metalness: 0.9, roughness: 0.2 })
+            );
+            emitterHousing.position.y = -2.75;
+            arm.wristGroup.add(emitterHousing);
+            
+            const emitterGeom = new THREE.ConeGeometry(1.8, 4, 16);
+            const emitterMat = new THREE.MeshStandardMaterial({ color: 0xff0033, emissive: 0xff0033, emissiveIntensity: 0.7 });
             arm.laserEmitter = new THREE.Mesh(emitterGeom, emitterMat);
             arm.laserEmitter.rotation.z = Math.PI;
-            arm.laserEmitter.position.y = -2;
+            arm.laserEmitter.position.y = -4;
+            
+            // # ADDED: Laser emitter lens/focus ring
+            const focusRing = new THREE.Mesh(
+                new THREE.TorusGeometry(1.5, 0.2, 8, 16),
+                new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.95, roughness: 0.05 })
+            );
+            focusRing.rotation.x = Math.PI / 2;
+            focusRing.position.y = -5.8;
+            arm.wristGroup.add(focusRing);
+            
             arm.wristGroup.add(arm.laserEmitter);
             arm.elbowGroup.add(arm.wristGroup);
 
@@ -287,7 +520,7 @@ export function PrinterViewer({ specs, calibration }: { specs: PrinterSpecs; cal
         });
         scene.add(armGroup);
 
-        // # UPDATED: Roof sphere lattice with rotatable emitter arms
+        // # UPDATED: Roof sphere lattice with detailed rotatable emitter arms
         const sphereGroup = new THREE.Group();
         const [gx, gy, gz] = [9, 9, 9];
         void gy;
@@ -300,41 +533,74 @@ export function PrinterViewer({ specs, calibration }: { specs: PrinterSpecs; cal
                 const emitterGroup = new THREE.Group();
                 const baseX = -encW / 2 + x * spacing;
                 const baseZ = -encD / 2 + z * spacing;
-                emitterGroup.position.set(baseX, encH, baseZ);
+                emitterGroup.position.set(baseX, encH - 1, baseZ);
 
-                // Rotatable mount base
+                // # UPDATED: Detailed rotatable mount base with servo housing
+                const servoBase = new THREE.Mesh(
+                    new THREE.BoxGeometry(1.5, 1.2, 1.5),
+                    new THREE.MeshStandardMaterial({ color: 0x1a202c, metalness: 0.8, roughness: 0.3 })
+                );
+                servoBase.position.y = 0.6;
+                emitterGroup.add(servoBase);
+                
                 const mountBase = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.8, 1, 1, 16),
+                    new THREE.CylinderGeometry(1, 1.2, 1.5, 16),
                     jointMat
                 );
                 emitterGroup.add(mountBase);
 
-                // Rotatable arm
+                // # UPDATED: Detailed rotatable arm assembly
                 const emitterArm = new THREE.Group();
-                const armLen = 3;
+                const armLen = 4;
+                
+                // Main arm segment
                 const armCylinder = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.3, 0.3, armLen, 8),
+                    new THREE.CylinderGeometry(0.4, 0.5, armLen, 12),
                     armMat
                 );
                 armCylinder.rotation.z = Math.PI / 2;
                 armCylinder.position.x = armLen / 2;
                 emitterArm.add(armCylinder);
-
-                // Laser emitter at end
-                const emitterDot = new THREE.Mesh(
-                    new THREE.SphereGeometry(Math.max(0.1, Math.min(emitter.w, emitter.h, emitter.d) * 0.03), 16, 16),
-                    new THREE.MeshStandardMaterial({ color: 0xffd166, emissive: 0xffd166, emissiveIntensity: 0.3 })
+                
+                // # ADDED: Arm joint/bracket
+                const armBracket = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.8, 0.8, 0.8),
+                    new THREE.MeshStandardMaterial({ color: 0x4a5568, metalness: 0.9, roughness: 0.2 })
                 );
-                emitterDot.position.x = armLen;
-                emitterArm.add(emitterDot);
+                armBracket.position.x = armLen;
+                emitterArm.add(armBracket);
 
-                // Laser beam from emitter
+                // # UPDATED: Detailed laser emitter at end
+                const emitterHousing = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.8, 0.8, 1.5, 12),
+                    new THREE.MeshStandardMaterial({ color: 0x2d3748, metalness: 0.9, roughness: 0.2 })
+                );
+                emitterHousing.position.x = armLen;
+                emitterHousing.rotation.z = Math.PI / 2;
+                emitterArm.add(emitterHousing);
+                
+                const emitterDot = new THREE.Mesh(
+                    new THREE.SphereGeometry(Math.max(0.15, Math.min(emitter.w, emitter.h, emitter.d) * 0.04), 16, 16),
+                    new THREE.MeshStandardMaterial({ color: 0xffd166, emissive: 0xffd166, emissiveIntensity: 0.5 })
+                );
+                emitterDot.position.x = armLen + 1;
+                emitterArm.add(emitterDot);
+                
+                // # ADDED: Emitter lens
+                const emitterLens = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.2, 12, 12),
+                    new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 })
+                );
+                emitterLens.position.x = armLen + 1.3;
+                emitterArm.add(emitterLens);
+
+                // # UPDATED: Laser beam from emitter (more visible)
                 const beamPoints = [
-                    new THREE.Vector3(armLen, 0, 0),
-                    new THREE.Vector3(armLen + 10, 0, 0)
+                    new THREE.Vector3(armLen + 1, 0, 0),
+                    new THREE.Vector3(armLen + 15, 0, 0)
                 ];
                 const beamGeom = new THREE.BufferGeometry().setFromPoints(beamPoints);
-                const emitterBeam = new THREE.Line(beamGeom, new THREE.LineBasicMaterial({ color: 0xffd166, linewidth: 1 }));
+                const emitterBeam = new THREE.Line(beamGeom, new THREE.LineBasicMaterial({ color: 0xffd166, linewidth: 2 }));
                 emitterArm.add(emitterBeam);
 
                 emitterGroup.add(emitterArm);
@@ -343,6 +609,34 @@ export function PrinterViewer({ specs, calibration }: { specs: PrinterSpecs; cal
             }
         }
         scene.add(sphereGroup);
+        
+        // # ADDED: Control panel/interface box
+        const controlBox = new THREE.Mesh(
+            new THREE.BoxGeometry(15, 10, 5),
+            new THREE.MeshStandardMaterial({ color: 0x1a202c, metalness: 0.7, roughness: 0.4 })
+        );
+        controlBox.position.set(encW / 2 - 10, encH / 2, -encD / 2 + 3);
+        scene.add(controlBox);
+        
+        // # ADDED: Display screen on control box
+        const screen = new THREE.Mesh(
+            new THREE.PlaneGeometry(8, 6),
+            new THREE.MeshStandardMaterial({ color: 0x00ff00, emissive: 0x001100, emissiveIntensity: 0.3 })
+        );
+        screen.position.set(0, 1, 2.6);
+        controlBox.add(screen);
+        
+        // # ADDED: Ventilation fans
+        const fanMat = new THREE.MeshStandardMaterial({ color: 0x4a5568, metalness: 0.8, roughness: 0.3 });
+        for (let i = 0; i < 2; i++) {
+            const fan = new THREE.Mesh(
+                new THREE.CylinderGeometry(3, 3, 1, 16),
+                fanMat
+            );
+            fan.rotation.x = Math.PI / 2;
+            fan.position.set(-encW / 2 + 5, encH - 5, -encD / 2 + 10 + i * 20);
+            scene.add(fan);
+        }
 
         // # ADDED: Calibration animation - scan the 900x900x900 plate
         if (calibration) {
