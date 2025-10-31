@@ -83,7 +83,8 @@ export function RobotBuilderSim({
 
         const step = () => {
             if (idx < phases.length) {
-                const [name, obj] = phases[idx];
+                // # UPDATED VERSION: assert non-undefined element access
+                const [name, obj] = phases[idx]!;
                 scene.add(obj);
                 onPhase?.(name);
                 idx += 1;

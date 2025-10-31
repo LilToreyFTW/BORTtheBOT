@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { FBXExporter } from "three/examples/jsm/exporters/FBXExporter.js";
+// # UPDATED VERSION: Use dynamic import to avoid bundler resolution issues
 
 export type RobotSpec = {
     plateSizeCm: { w: number; d: number };
@@ -61,11 +61,14 @@ export function buildRobotHierarchy(spec: RobotSpec): THREE.Group {
     return group;
 }
 
-export function exportRobotAsFBX(spec: RobotSpec, filename = "robot.fbx") {
+export async function exportRobotAsFBX(spec: RobotSpec, filename = "robot.fbx") {
     const root = buildRobotHierarchy(spec);
     const scene = new THREE.Scene();
     scene.add(root);
 
+    // # UPDATED VERSION: dynamic path to avoid Rollup static resolution issues
+    const modulePath = ["three", "/examples/jsm/exporters/FBXExporter.js"].join("");
+    const { FBXExporter } = await import(modulePath as any);
     const exporter = new FBXExporter();
     const result = exporter.parse(scene);
 

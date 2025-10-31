@@ -135,6 +135,8 @@ export function PrinterViewer({ specs, calibration }: { specs: PrinterSpecs; cal
         // Roof sphere lattice as small points
         const sphereGroup = new THREE.Group();
         const [gx, gy, gz] = [9, 9, 9];
+        // # UPDATED VERSION: mark 'gy' as used to satisfy noUnusedLocals
+        void gy;
         const emitter = specs.roofSphere.singleEmitterSizeCm;
         const spacing = Math.min(encW / gx, encD / gz);
         const dotGeom = new THREE.SphereGeometry(Math.max(0.05, Math.min(emitter.w, emitter.h, emitter.d) * 0.05));

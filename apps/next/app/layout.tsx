@@ -7,6 +7,20 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // # UPDATED VERSION: Fallback when Clerk publishable key is missing at build time
+  const hasClerk = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  if (!hasClerk) {
+    return (
+      <html lang="en">
+        <body style={{ margin: 0, background: '#0b0e14', color: '#e6edf3' }}>
+          <header style={{ display: 'flex', gap: 8, padding: 8, borderBottom: '1px solid #222' }}>
+            {/* # UPDATED VERSION: Render without Clerk controls */}
+          </header>
+          {children}
+        </body>
+      </html>
+    );
+  }
   return (
     <ClerkProvider>
       <html lang="en">
