@@ -144,12 +144,27 @@ export const botsRouter = router({
             const marginD = (plateDcm - fpD) / 2;
             const safe = marginW >= 0 && marginD >= 0;
 
-            // Simulated calibration matrix for 8 downward lasers positioned evenly across width
+            // # UPDATED: Simulated calibration matrix for 8 downward lasers with arm rotation data
             const laserPositions = Array.from({ length: specs.printer.downwardLasers.count }, (_, i) => {
-                const x = (plateWcm / (specs.printer.downwardLasers.count - 1)) * i;
-                const y = 0; // roof mounting line
-                const z = specs.printer.enclosureCm.h; // from roof down to base
+                const x = (plateWcm / (specs.printer.downwardLasers.count - 1)) * i - plateWcm / 2;
+                const y = specs.printer.enclosureCm.h; // roof mounting line
+                const z = 0;
                 return { index: i, xCm: x, yCm: y, zCm: z };
+            });
+
+            // # ADDED: Calculate arm rotation angles for 360° calibration scan of 900x900x900 plate
+            const plateSizeCm = 90; // 900mm = 90cm
+            const armRotations = Array.from({ length: specs.printer.downwardLasers.count }, (_, i) => {
+                // Each arm rotates 360° with offset
+                const baseYaw = (i * Math.PI / 4); // Staggered starting positions
+                return {
+                    index: i,
+                    shoulderYaw: baseYaw, // 360° rotation capability
+                    shoulderPitch: Math.PI / 4, // 45° down to plate
+                    elbow: 0, // Fine adjustment angle
+                    wristYaw: 0, // Wrist yaw rotation
+                    wristPitch: 0, // Wrist pitch for beam direction
+                };
             });
 
             return {
@@ -159,6 +174,7 @@ export const botsRouter = router({
                 plateDcm,
                 marginsCm: { w: Math.max(0, marginW), d: Math.max(0, marginD) },
                 downwardArray: laserPositions,
+                armRotations, // # ADDED: Arm rotation data for calibration
             };
         }),
     remove: publicProcedure.input(z.object({ id: z.string().min(1) })).mutation(async ({ input }) => {

@@ -8,7 +8,7 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 // # ADDED
 import { db } from "@project/db";
-import { botProgram } from "@project/db/src/schema/bots";
+import { botProgram } from "@project/db/schema/bots";
 import { eq } from "drizzle-orm";
 
 const app = new Hono();

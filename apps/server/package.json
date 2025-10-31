@@ -5,9 +5,13 @@
   "scripts": {
     "build": "tsdown",
     "check-types": "tsc -b",
-    "compile": "bun build --compile --minify --sourcemap --bytecode ./src/index.ts --outfile server",
+    "build:exe": "npm run build && pkg . --targets node18-win-x64 --output BORTtheBOT-Server.exe",
+    "bundle": "bun build ./src/launcher.ts --outdir ./bundled --target bun --minify",
+    "compile": "npm run build && bun build --compile --minify --sourcemap ./src/launcher-dist.ts --outfile BORTtheBOT-Server.exe",
+    "compile:unix": "npm run build && bun build --compile --minify --sourcemap ./src/launcher-dist.ts --outfile BORTtheBOT-Server",
     "dev": "bun run --hot src/index.ts",
-    "start": "bun run dist/index.js"
+    "start": "bun run dist/index.js",
+    "launch": "bun run src/launcher.ts"
   },
   "dependencies": {
     "hono": "catalog:",
@@ -23,6 +27,20 @@
   "devDependencies": {
     "typescript": "catalog:",
     "@types/bun": "^1.2.6",
-    "tsdown": "catalog:"
+    "tsdown": "catalog:",
+    "pkg": "^5.8.1"
+  },
+  "pkg": {
+    "scripts": [
+      "dist/index.js"
+    ],
+    "assets": [
+      "node_modules/**/*",
+      "../../packages/**/*"
+    ],
+    "targets": [
+      "node18-win-x64"
+    ],
+    "outputPath": "BORTtheBOT-Server.exe"
   }
 }
