@@ -4,42 +4,46 @@ type SendMessageInput = {
     message: string;
 };
 
-async function generateBotReply(message: string): Promise<string> {
+function generateLocalReply(message: string): string {
     const trimmed = message.trim();
     if (!trimmed) return "Say something to BORT!";
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-        // Fallback simple bot
-        return `BORT heard: "${trimmed}"`;
+    const lower = trimmed.toLowerCase();
+
+    // Simple built-in commands
+    if (lower === "help" || lower === "/help") {
+        return [
+            "BORT commands:",
+            "- help: show this help",
+            "- time: current time",
+            "- date: today’s date",
+            "- echo <text>: repeat back",
+            "- upper <text>: UPPERCASE",
+            "- lower <text>: lowercase",
+            "- reverse <text>: esrever",
+        ].join("\n");
+    }
+    if (lower === "time" || lower === "/time") {
+        return new Date().toLocaleTimeString();
+    }
+    if (lower === "date" || lower === "/date") {
+        return new Date().toLocaleDateString();
+    }
+    if (lower.startsWith("echo ")) {
+        return trimmed.slice(5);
+    }
+    if (lower.startsWith("upper ")) {
+        return trimmed.slice(6).toUpperCase();
+    }
+    if (lower.startsWith("lower ")) {
+        return trimmed.slice(6).toLowerCase();
+    }
+    if (lower.startsWith("reverse ")) {
+        return trimmed.slice(8).split("").reverse().join("");
     }
 
-    try {
-        const response = await fetch("https://api.openai.com/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${apiKey}`,
-            },
-            body: JSON.stringify({
-                model: "gpt-4o-mini",
-                messages: [
-                    { role: "system", content: "You are BORTtheBOT, a concise helpful assistant." },
-                    { role: "user", content: trimmed },
-                ],
-                temperature: 0.6,
-            }),
-        });
-
-        if (!response.ok) {
-            return `BORT fallback: ${trimmed}`;
-        }
-        const json = (await response.json()) as any;
-        const content: string | undefined = json?.choices?.[0]?.message?.content;
-        return content ?? "I'm not sure how to respond to that.";
-    } catch {
-        return `BORT fallback: ${trimmed}`;
-    }
+    // Default local behavior
+    return `BORT heard: "${trimmed}"`;
 }
 
 export const botRouter = router({
@@ -55,8 +59,8 @@ export const botRouter = router({
             }
             throw new Error("Invalid input: expected { message: string }");
         })
-        .mutation(async ({ input }) => {
-            const reply = await generateBotReply(input.message);
+        .mutation(({ input }) => {
+            const reply = generateLocalReply(input.message);
             return { reply };
         }),
 });
