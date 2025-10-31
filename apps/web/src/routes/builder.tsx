@@ -7,6 +7,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useCallback, useRef, useState } from "react";
 import { PrinterViewer } from "@/components/viewer/PrinterViewer";
 import { RobotBuilderSim } from "@/components/viewer/RobotBuilderSim";
+import { exportRobotAsFBX } from "@/components/viewer/exportFbx";
 
 export const Route = createFileRoute("/builder")({
     component: BuilderPage,
@@ -91,6 +92,25 @@ function BuilderPage() {
                                     plateSizeCm={{ w: b.specs.printer.basePlateMm.w / 10, d: b.specs.printer.basePlateMm.d / 10 }}
                                     enclosureHeightCm={b.specs.printer.enclosureCm.h}
                                 />
+                                <div className="mt-2">
+                                    <Button
+                                        size="sm"
+                                        onClick={() =>
+                                            exportRobotAsFBX(
+                                                {
+                                                    plateSizeCm: {
+                                                        w: b.specs.printer.basePlateMm.w / 10,
+                                                        d: b.specs.printer.basePlateMm.d / 10,
+                                                    },
+                                                    enclosureHeightCm: b.specs.printer.enclosureCm.h,
+                                                },
+                                                `${b.name.replace(/\s+/g, "_")}.fbx`,
+                                            )
+                                        }
+                                    >
+                                        Export FBX
+                                    </Button>
+                                </div>
                             </Card>
                         ))
                     ) : (
