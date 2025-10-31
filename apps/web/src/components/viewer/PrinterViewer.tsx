@@ -364,7 +364,7 @@ export function PrinterViewer({ specs, calibration }: { specs: PrinterSpecs; cal
             laserPrinterEight,
         ];
 
-        audioRefsRef.current = soundFiles.map((soundFile, idx) => {
+        audioRefsRef.current = soundFiles.map((soundFile) => {
             const audio = new Audio(soundFile);
             audio.loop = true;
             audio.volume = 0.3; // Set volume to 30% to avoid being too loud
