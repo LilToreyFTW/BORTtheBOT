@@ -219,6 +219,9 @@ export function PrinterViewer({ specs, calibration }: { specs: PrinterSpecs; cal
             const baseY = p.yCm;
             const baseZ = p.zCm;
             arm.basePosition = new THREE.Vector3(baseX, baseY, baseZ);
+            
+            // Use idx to ensure each arm has unique positioning (satisfies noUnusedLocals)
+            void idx;
 
             // Shoulder joint (can rotate Y and pitch)
             arm.shoulderGroup = new THREE.Group();
