@@ -10,14 +10,27 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as StoreRouteImport } from './routes/store'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ProgramsRouteImport } from './routes/programs'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as ComponentsRouteImport } from './routes/components'
 import { Route as BuilderRouteImport } from './routes/builder'
 import { Route as IndexRouteImport } from './routes/index'
 
 const StoreRoute = StoreRouteImport.update({
   id: '/store',
   path: '/store',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProgramsRoute = ProgramsRouteImport.update({
+  id: '/programs',
+  path: '/programs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -28,6 +41,11 @@ const LoginRoute = LoginRouteImport.update({
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComponentsRoute = ComponentsRouteImport.update({
+  id: '/components',
+  path: '/components',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BuilderRoute = BuilderRouteImport.update({
@@ -44,38 +62,75 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/builder': typeof BuilderRoute
+  '/components': typeof ComponentsRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/programs': typeof ProgramsRoute
+  '/settings': typeof SettingsRoute
   '/store': typeof StoreRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/builder': typeof BuilderRoute
+  '/components': typeof ComponentsRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/programs': typeof ProgramsRoute
+  '/settings': typeof SettingsRoute
   '/store': typeof StoreRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/builder': typeof BuilderRoute
+  '/components': typeof ComponentsRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/programs': typeof ProgramsRoute
+  '/settings': typeof SettingsRoute
   '/store': typeof StoreRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/builder' | '/dashboard' | '/login' | '/store'
+  fullPaths:
+    | '/'
+    | '/builder'
+    | '/components'
+    | '/dashboard'
+    | '/login'
+    | '/programs'
+    | '/settings'
+    | '/store'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/builder' | '/dashboard' | '/login' | '/store'
-  id: '__root__' | '/' | '/builder' | '/dashboard' | '/login' | '/store'
+  to:
+    | '/'
+    | '/builder'
+    | '/components'
+    | '/dashboard'
+    | '/login'
+    | '/programs'
+    | '/settings'
+    | '/store'
+  id:
+    | '__root__'
+    | '/'
+    | '/builder'
+    | '/components'
+    | '/dashboard'
+    | '/login'
+    | '/programs'
+    | '/settings'
+    | '/store'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BuilderRoute: typeof BuilderRoute
+  ComponentsRoute: typeof ComponentsRoute
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
+  ProgramsRoute: typeof ProgramsRoute
+  SettingsRoute: typeof SettingsRoute
   StoreRoute: typeof StoreRoute
 }
 
@@ -86,6 +141,20 @@ declare module '@tanstack/react-router' {
       path: '/store'
       fullPath: '/store'
       preLoaderRoute: typeof StoreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/programs': {
+      id: '/programs'
+      path: '/programs'
+      fullPath: '/programs'
+      preLoaderRoute: typeof ProgramsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -100,6 +169,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/components': {
+      id: '/components'
+      path: '/components'
+      fullPath: '/components'
+      preLoaderRoute: typeof ComponentsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/builder': {
@@ -122,8 +198,11 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BuilderRoute: BuilderRoute,
+  ComponentsRoute: ComponentsRoute,
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
+  ProgramsRoute: ProgramsRoute,
+  SettingsRoute: SettingsRoute,
   StoreRoute: StoreRoute,
 }
 export const routeTree = rootRouteImport

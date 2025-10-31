@@ -42,84 +42,194 @@ function BuilderPage() {
     );
 
     return (
-        <div className="container mx-auto max-w-5xl px-4 py-4">
-            <div className="mb-4 flex items-center justify-between">
-                <h1 className="text-xl font-semibold">BORT Command Center</h1>
-                <Link to="/">Home</Link>
+        <div className="container mx-auto max-w-7xl p-6 space-y-6">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold flex items-center gap-2">
+                        <Wrench className="h-8 w-8 text-primary" />
+                        Robot Builder
+                    </h1>
+                    <p className="text-muted-foreground mt-1">Design and configure your BORTtheBOT robots</p>
+                </div>
+                <Badge variant="secondary">{bots.data?.length || 0} Robots</Badge>
             </div>
 
-            <section className="mb-4 rounded-lg border p-4">
-                <h2 className="mb-2 font-medium">Create New Bot</h2>
-                <div className="flex flex-wrap items-center gap-2">
-                    <Input ref={nameRef} placeholder="Bot name" className="w-60" />
+            {/* Create New Bot Section */}
+            <Card className="p-6">
+                <div className="flex items-center gap-2 mb-4">
+                    <Plus className="h-5 w-5 text-primary" />
+                    <h2 className="text-xl font-semibold">Create New Robot</h2>
+                </div>
+                <Separator className="mb-4" />
+                <div className="flex flex-wrap items-center gap-3">
+                    <Input ref={nameRef} placeholder="Robot name" className="w-64" />
                     <Input ref={descRef} placeholder="Description (optional)" className="w-80" />
                     <Button onClick={onCreate} disabled={createBot.isPending}>
-                        {createBot.isPending ? "Creating..." : "Create"}
+                        {createBot.isPending ? (
+                            <>Creating...</>
+                        ) : (
+                            <>
+                                <Plus className="h-4 w-4 mr-2" />
+                                Create Robot
+                            </>
+                        )}
                     </Button>
                 </div>
-            </section>
+            </Card>
 
-            <section className="rounded-lg border p-3">
-                <h2 className="mb-2 font-medium">Bots (Column Box)</h2>
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-                    {bots.data?.length ? (
-                        bots.data.map((b) => (
-                            <Card key={b.id} className="flex flex-col gap-2 p-3">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <div className="font-medium">{b.name}</div>
-                                        <div className="text-xs text-muted-foreground">{b.description}</div>
-                                    </div>
-                                    <Button variant="destructive" onClick={() => onDelete(b.id)}>
-                                        Delete
-                                    </Button>
-                                </div>
-                                <PrinterEditor botId={b.id} specs={b.specs} onSave={async (specs) => {
-                                    await updateSpecs.mutateAsync({ id: b.id, specs });
-                                    await bots.refetch();
-                                }} onCalibrate={async () => {
-                                    const res = await calibrate.mutateAsync({ id: b.id });
-                                    alert(
-                                        res.ok
-                                            ? `Calibrated. Safe: ${res.safe}. Margins (cm): w=${res.marginsCm.w.toFixed(2)}, d=${
-                                                    res.marginsCm.d.toFixed(2)
-                                                }`
-                                            : "Calibration failed",
-                                    );
-                                }} />
-                                <PrinterViewer specs={b.specs.printer} calibration={calibrate.data as any} />
-                                <RobotBuilderSim
-                                    plateSizeCm={{ w: b.specs.printer.basePlateMm.w / 10, d: b.specs.printer.basePlateMm.d / 10 }}
-                                    enclosureHeightCm={b.specs.printer.enclosureCm.h}
-                                />
-                                <ProgramEditor botId={b.id} />
-                                <div className="mt-2">
-                                    <Button
-                                        size="sm"
-                                        onClick={() =>
-                                            exportRobotAsFBX(
-                                                {
-                                                    plateSizeCm: {
-                                                        w: b.specs.printer.basePlateMm.w / 10,
-                                                        d: b.specs.printer.basePlateMm.d / 10,
-                                                    },
-                                                    enclosureHeightCm: b.specs.printer.enclosureCm.h,
-                                                },
-                                                `${b.name.replace(/\s+/g, "_")}.fbx`,
-                                            )
-                                        }
-                                    >
-                                        Export FBX
-                                    </Button>
-                                </div>
-                            </Card>
-                        ))
-                    ) : (
-                        <div className="text-sm text-muted-foreground">No bots yet. Create one above.</div>
-                    )}
+            {/* Robots Grid */}
+            {bots.data?.length ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {bots.data.map((b) => (
+                        <RobotCard
+                            key={b.id}
+                            bot={b}
+                            onDelete={onDelete}
+                            updateSpecs={updateSpecs}
+                            calibrate={calibrate}
+                            bots={bots}
+                        />
+                    ))}
                 </div>
-            </section>
+            ) : (
+                <Card className="p-12 text-center">
+                    <Bot className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                    <h3 className="text-lg font-semibold mb-2">No Robots Yet</h3>
+                    <p className="text-muted-foreground mb-4">
+                        Create your first robot to get started with BORTtheBOT
+                    </p>
+                    <Button onClick={onCreate}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Your First Robot
+                    </Button>
+                </Card>
+            )}
         </div>
+    );
+}
+
+function RobotCard({
+    bot,
+    onDelete,
+    updateSpecs,
+    calibrate,
+    bots,
+}: {
+    bot: any;
+    onDelete: (id: string) => Promise<void>;
+    updateSpecs: any;
+    calibrate: any;
+    bots: any;
+}) {
+    const [selectedTab, setSelectedTab] = useState("overview");
+
+    return (
+        <Card className="flex flex-col">
+            <div className="p-4 border-b">
+                <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                        <Bot className="h-5 w-5 text-primary" />
+                        <h3 className="text-lg font-semibold">{bot.name}</h3>
+                    </div>
+                    <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => onDelete(bot.id)}
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                </div>
+                {bot.description && (
+                    <p className="text-sm text-muted-foreground">{bot.description}</p>
+                )}
+            </div>
+
+            <Tabs value={selectedTab} onValueChange={setSelectedTab} className="flex-1 flex flex-col">
+                <TabsList className="mx-4 mt-4">
+                    <TabsTrigger value="overview">Overview</TabsTrigger>
+                    <TabsTrigger value="printer">Printer</TabsTrigger>
+                    <TabsTrigger value="program">Program</TabsTrigger>
+                    <TabsTrigger value="export">Export</TabsTrigger>
+                </TabsList>
+
+                <div className="flex-1 p-4 space-y-4 overflow-y-auto">
+                    <TabsContent value="overview" className="space-y-4 mt-4">
+                        <div>
+                            <h4 className="font-medium mb-2">3D Printer Viewer</h4>
+                            <PrinterViewer 
+                                specs={bot.specs.printer} 
+                                calibration={calibrate.data as any} 
+                            />
+                        </div>
+                        <Separator />
+                        <div>
+                            <h4 className="font-medium mb-2">Robot Build Simulation</h4>
+                            <RobotBuilderSim
+                                plateSizeCm={{ 
+                                    w: bot.specs.printer.basePlateMm.w / 10, 
+                                    d: bot.specs.printer.basePlateMm.d / 10 
+                                }}
+                                enclosureHeightCm={bot.specs.printer.enclosureCm.h}
+                            />
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="printer" className="mt-4">
+                        <PrinterEditor
+                            botId={bot.id}
+                            specs={bot.specs}
+                            onSave={async (specs) => {
+                                await updateSpecs.mutateAsync({ id: bot.id, specs });
+                                await bots.refetch();
+                            }}
+                            onCalibrate={async () => {
+                                const res = await calibrate.mutateAsync({ id: bot.id });
+                                alert(
+                                    res.ok
+                                        ? `Calibrated. Safe: ${res.safe}. Margins (cm): w=${res.marginsCm.w.toFixed(2)}, d=${
+                                                res.marginsCm.d.toFixed(2)
+                                            }`
+                                        : "Calibration failed",
+                                );
+                            }}
+                        />
+                    </TabsContent>
+
+                    <TabsContent value="program" className="mt-4">
+                        <ProgramEditor botId={bot.id} />
+                    </TabsContent>
+
+                    <TabsContent value="export" className="mt-4 space-y-4">
+                        <div>
+                            <h4 className="font-medium mb-2">Export Options</h4>
+                            <p className="text-sm text-muted-foreground mb-4">
+                                Export your robot model and program files
+                            </p>
+                            <div className="flex flex-col gap-2">
+                                <Button
+                                    onClick={() =>
+                                        exportRobotAsFBX(
+                                            {
+                                                plateSizeCm: {
+                                                    w: bot.specs.printer.basePlateMm.w / 10,
+                                                    d: bot.specs.printer.basePlateMm.d / 10,
+                                                },
+                                                enclosureHeightCm: bot.specs.printer.enclosureCm.h,
+                                            },
+                                            `${bot.name.replace(/\s+/g, "_")}.fbx`,
+                                        )
+                                    }
+                                    className="w-full"
+                                >
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Export FBX Model
+                                </Button>
+                            </div>
+                        </div>
+                    </TabsContent>
+                </div>
+            </Tabs>
+        </Card>
     );
 }
 
