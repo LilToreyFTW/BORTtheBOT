@@ -10,4 +10,14 @@ export const bot = sqliteTable("bot", {
     updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
 });
 
+// # ADDED: Bot program storage (e.g., Python code) per bot
+export const botProgram = sqliteTable("bot_program", {
+    id: text("id").primaryKey(),
+    botId: text("bot_id").notNull(),
+    language: text("language").notNull(), // e.g., "python"
+    code: text("code").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+});
+
 

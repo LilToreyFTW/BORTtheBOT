@@ -92,6 +92,7 @@ function BuilderPage() {
                                     plateSizeCm={{ w: b.specs.printer.basePlateMm.w / 10, d: b.specs.printer.basePlateMm.d / 10 }}
                                     enclosureHeightCm={b.specs.printer.enclosureCm.h}
                                 />
+                                <ProgramEditor botId={b.id} />
                                 <div className="mt-2">
                                     <Button
                                         size="sm"
@@ -195,6 +196,39 @@ function Field({ label, value, onChange }: { label: string; value: number; onCha
                 onChange={(e) => onChange(Number(e.target.value))}
             />
         </label>
+    );
+}
+
+// # ADDED: Minimal Python program editor and downloader
+function ProgramEditor({ botId }: { botId: string }) {
+    const [code, setCode] = useState("print('Hello from BORTtheBOT')\n");
+    const [programId] = useState(() => crypto.randomUUID());
+    const upsert = useMutation(trpc.programs.upsert.mutationOptions());
+    const createToken = useMutation(trpc.programs.createDownloadToken.mutationOptions());
+
+    const onSave = async () => {
+        await upsert.mutateAsync({ id: programId, botId, language: "python", code });
+        alert("Saved program");
+    };
+    const onDownload = async () => {
+        await upsert.mutateAsync({ id: programId, botId, language: "python", code });
+        const { token } = await createToken.mutateAsync({ id: programId });
+        window.location.href = `${import.meta.env.VITE_SERVER_URL ?? "http://localhost:3000"}/programs/${token}`;
+    };
+
+    return (
+        <div className="mt-2 rounded-md border p-2">
+            <div className="mb-1 text-xs font-medium">Program (Python)</div>
+            <textarea
+                className="h-32 w-full resize-y rounded border bg-transparent p-2 text-xs font-mono"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+            />
+            <div className="mt-2 flex gap-2">
+                <Button size="sm" onClick={onSave}>Save Program</Button>
+                <Button size="sm" variant="secondary" onClick={onDownload}>Download .py</Button>
+            </div>
+        </div>
     );
 }
 

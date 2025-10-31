@@ -59,6 +59,9 @@ function BuilderContent() {
   const removeBot = useTRPCMutation("bots.remove");
   const updateSpecs = useTRPCMutation("bots.updateSpecs");
   const calibrate = useTRPCMutation("bots.calibratePrinter");
+  // # ADDED: program endpoints
+  const upsertProgram = useTRPCMutation("programs.upsert");
+  const createToken = useTRPCMutation("programs.createDownloadToken");
 
   const nameRef = useRef<HTMLInputElement | null>(null);
   const descRef = useRef<HTMLInputElement | null>(null);
@@ -105,6 +108,26 @@ function BuilderContent() {
               {/* # UPDATED VERSION: Use corrected component import */}
               <RobotBuilderSim2 plateW={b.specs.printer.basePlateMm.w/10} plateD={b.specs.printer.basePlateMm.d/10} height={b.specs.printer.enclosureCm.h} botName={b.name} />
             </div>
+          {/* # ADDED: Minimal Python program editor */}
+          <div style={{ marginTop: 8, borderTop: "1px solid #222", paddingTop: 8 }}>
+            <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 4 }}>Program (Python)</div>
+            <textarea id={`prog-${b.id}`} defaultValue={"print('Hello from BORTtheBOT')\n"} style={{ width: "100%", minHeight: 120, background: "transparent", color: "inherit", border: "1px solid #333", borderRadius: 4, padding: 6, fontFamily: "monospace", fontSize: 12 }} />
+            <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+              <button onClick={async () => {
+                const code = (document.getElementById(`prog-${b.id}`) as HTMLTextAreaElement)?.value ?? "";
+                const pid = crypto.randomUUID();
+                await upsertProgram.mutateAsync({ id: pid, botId: b.id, language: "python", code });
+                alert("Saved program");
+              }}>Save Program</button>
+              <button onClick={async () => {
+                const code = (document.getElementById(`prog-${b.id}`) as HTMLTextAreaElement)?.value ?? "";
+                const pid = crypto.randomUUID();
+                await upsertProgram.mutateAsync({ id: pid, botId: b.id, language: "python", code });
+                const tok = await createToken.mutateAsync({ id: pid });
+                window.location.href = `${process.env.NEXT_PUBLIC_SERVER_URL ?? "http://localhost:3000"}/programs/${(tok as any).token}`;
+              }}>Download .py</button>
+            </div>
+          </div>
           </div>
         ))}
       </section>

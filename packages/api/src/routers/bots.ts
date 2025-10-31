@@ -3,6 +3,9 @@ import { z } from "zod";
 import { db } from "@project/db";
 import { bot as botTable } from "@project/db/src/schema/bots";
 import { eq } from "drizzle-orm";
+// # ADDED: Node FS for preset program scaffolding
+import fs from "node:fs";
+import path from "node:path";
 
 const printerSchema = z.object({
     // Enclosure size (creator box) in cm: width x height x depth
@@ -50,6 +53,62 @@ export const botsRouter = router({
             createdAt: now,
             updatedAt: now,
         });
+        // # ADDED: Create local bot folder and preset Python starter file
+        try {
+            const baseDir = process.env.BOT_STORAGE_DIR ?? path.resolve(process.cwd(), "bot_storage");
+            const botDir = path.join(baseDir, input.id);
+            fs.mkdirSync(botDir, { recursive: true });
+            const preset = [
+                "#!/usr/bin/env python3",
+                "# BORTtheBOT Robot Builder - Starter Program",
+                "# This preset is generated automatically for your new robot.",
+                "# Fill in your logic inside the placeholders below.",
+                "",
+                "class Robot:",
+                "    def __init__(self):",
+                "        # Initialize your robot state here",
+                "        pass",
+                "",
+                "    def setup(self):",
+                "        # Run once at startup",
+                "        pass",
+                "",
+                "    def loop(self):",
+                "        # Main loop - called repeatedly",
+                "        pass",
+                "",
+                "def main():",
+                "    robot = Robot()",
+                "    robot.setup()",
+                "    # Replace this simple loop with your control logic",
+                "    # while True: robot.loop()",
+                "    pass",
+                "",
+                "if __name__ == '__main__':",
+                "    main()",
+                "",
+            ].join("\n");
+            const presetPath = path.join(botDir, "main.py");
+            if (!fs.existsSync(presetPath)) {
+                fs.writeFileSync(presetPath, preset, "utf8");
+            }
+            // Also drop a simple README for users
+            const readme = [
+                `# Robot: ${input.name}`,
+                "",
+                "Files:",
+                "- main.py  # Your starter Python file",
+                "",
+                "Set environment BOT_STORAGE_DIR to change this storage location.",
+                "",
+            ].join("\n");
+            const readmePath = path.join(botDir, "README.md");
+            if (!fs.existsSync(readmePath)) {
+                fs.writeFileSync(readmePath, readme, "utf8");
+            }
+        } catch (_) {
+            // ignore filesystem errors to avoid failing API
+        }
         return { ok: true };
     }),
     updateSpecs: publicProcedure
