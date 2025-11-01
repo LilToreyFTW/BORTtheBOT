@@ -59748,26 +59748,26 @@ var require_libsql = /* @__PURE__ */ __commonJS3({ "../../node_modules/.bun/libs
           target = "linux-arm64-gnu";
           break;
       }
-    // When running inside a pkg-built executable, prefer loading the
-    // platform .node file from the on-disk node_modules directory next
-    // to the executable. pkg cannot load native .node files from its
-    // internal snapshot, so we attempt to load from filesystem first.
+    // When running inside a pkg-built executable, try to load from staging/native
+    // which will be included in the snapshot. The native .node will be loaded
+    // by node's require() from the snapshot.
     try {
       if (typeof process !== "undefined" && process.pkg) {
         try {
           const path = __require('path');
           const fs = __require('fs');
-          const dir = path.join(process.cwd(), 'node_modules', '@libsql', target);
+          const dir = path.join(__dirname, 'staging', 'native', target);
           const maybe = path.join(dir, 'index.node');
           if (fs.existsSync(maybe)) {
             // load() will call __require on dirname/index.node when present
             const loaded = load(dir);
             if (loaded)
               return loaded;
-            // fallback: require the .node file directly by absolute path
+            // fallback: require the .node file directly
             return __require(maybe);
           }
         } catch (e) {
+          console.error('Failed to load native module from staging:', e);
           // continue to package-internal require below
         }
       }

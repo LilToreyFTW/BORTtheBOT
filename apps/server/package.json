@@ -40,7 +40,8 @@
     ],
     "assets": [
       "node_modules/**/*",
-      "../../packages/**/*"
+      "../../packages/**/*",
+      "staging/**/*"
     ],
     "targets": [
       "node18-win-x64"
