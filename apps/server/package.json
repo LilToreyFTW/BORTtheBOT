@@ -12,7 +12,9 @@
     "compile:unix": "npm run build && bun build --compile --minify --sourcemap ./src/launcher-dist.ts --outfile BORTtheBOT-Server",
     "dev": "bun run --hot src/index.ts",
     "start": "bun run dist/index.js",
-    "launch": "bun run src/launcher.ts"
+    "launch": "bun run src/launcher.ts",
+    "bundle:cjs": "esbuild dist/index.js --bundle --platform=node --target=node18 --format=cjs --outfile=bundle/index.cjs",
+    "build:exe:pkg": "npm run bundle:cjs && node node_modules/pkg/lib-es5/bin.js bundle/index.cjs --targets node18-win-x64 --output BORTtheBOT-Server.exe"
   },
   "dependencies": {
     "hono": "catalog:",
@@ -29,7 +31,8 @@
     "typescript": "catalog:",
     "@types/bun": "^1.2.6",
     "tsdown": "catalog:",
-    "pkg": "^5.8.1"
+    "pkg": "^5.8.1",
+    "esbuild": "^0.17.19"
   },
   "pkg": {
     "scripts": [
