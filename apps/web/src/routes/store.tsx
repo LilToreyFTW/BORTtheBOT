@@ -38,11 +38,11 @@ function StorePage() {
 
     const ccSubscribe = async (planId: string) => {
         try {
-            const res = await createCheckout.mutateAsync({
-                planId,
-                successUrl: window.location.origin + "/store?status=success",
-                cancelUrl: window.location.origin + "/store?status=cancel",
-            });
+        const res = await createCheckout.mutateAsync({
+            planId,
+            successUrl: window.location.origin + "/store?status=success",
+            cancelUrl: window.location.origin + "/store?status=cancel",
+        });
             if (res.url) {
                 window.location.href = res.url;
             } else {
@@ -60,7 +60,7 @@ function StorePage() {
             return;
         }
         try {
-            await recordCash.mutateAsync({ planId, txRef: ref });
+        await recordCash.mutateAsync({ planId, txRef: ref });
             toast.success("Cash App payment reference submitted for review!");
             setCashTxRefs({ ...cashTxRefs, [planId]: "" });
         } catch (error) {
@@ -94,8 +94,8 @@ function StorePage() {
                                     : "Your payment was cancelled. You can try again anytime."}
                             </p>
                         </div>
-                    </div>
-                </Card>
+                        </div>
+                    </Card>
             )}
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
