@@ -1,7 +1,7 @@
 import { publicProcedure, router } from "../index";
 import { z } from "zod";
 import { db } from "@project/db";
-import { bot as botTable } from "@project/db/src/schema/bots";
+import { bot as botTable } from "@project/db/schema/bots";
 import { eq } from "drizzle-orm";
 // # ADDED: Node FS for preset program scaffolding
 import fs from "node:fs";

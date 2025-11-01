@@ -1,7 +1,7 @@
 import { publicProcedure, router } from "../index";
 import { z } from "zod";
 import { db } from "@project/db";
-import { botProgram } from "@project/db/src/schema/bots";
+import { botProgram } from "@project/db/schema/bots";
 import { eq } from "drizzle-orm";
 
 // # ADDED: Programs router for attaching code (e.g., Python) to bots

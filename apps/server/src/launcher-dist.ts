@@ -2,9 +2,8 @@
 // # ADDED: Launcher using built dist files
 import "dotenv/config";
 import { serve } from "bun";
-// Import the built app from dist
-const appModule = await import("../dist/index.js");
-const app = appModule.default;
+// # UPDATED: Import from source for proper workspace resolution
+import app from "./index";
 
 const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || "0.0.0.0";

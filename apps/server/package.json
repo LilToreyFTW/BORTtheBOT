@@ -5,7 +5,8 @@
   "scripts": {
     "build": "tsdown",
     "check-types": "tsc -b",
-    "build:exe": "npm run build && pkg . --targets node18-win-x64 --output BORTtheBOT-Server.exe",
+    "build:exe": "bun run build && bun build --compile --minify --sourcemap ./src/launcher-dist.ts --outfile ./BORTtheBOT-Server.exe --target bun",
+    "build:exe:unix": "bun run build && bun build --compile --minify --sourcemap ./src/launcher-dist.ts --outfile ./BORTtheBOT-Server --target bun",
     "bundle": "bun build ./src/launcher.ts --outdir ./bundled --target bun --minify",
     "compile": "npm run build && bun build --compile --minify --sourcemap ./src/launcher-dist.ts --outfile BORTtheBOT-Server.exe",
     "compile:unix": "npm run build && bun build --compile --minify --sourcemap ./src/launcher-dist.ts --outfile BORTtheBOT-Server",

@@ -2,7 +2,7 @@ import { publicProcedure, router } from "../index";
 import { z } from "zod";
 import Stripe from "stripe";
 import { db } from "@project/db";
-import { payment, plan, subscription } from "@project/db/src/schema/billing";
+import { payment, plan, subscription } from "@project/db/schema/billing";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", { apiVersion: "2024-06-20" });
 

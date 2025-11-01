@@ -1,0 +1,44 @@
+{
+  "name": "bortthebot-server-gui",
+  "version": "1.0.0",
+  "description": "BORTtheBOT Server GUI Launcher",
+  "author": "BORTtheBOT",
+  "main": "src/main.js",
+  "scripts": {
+    "dev": "electron .",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "pack": "electron-builder --dir"
+  },
+  "build": {
+    "appId": "com.bortthebot.server",
+    "productName": "BORTtheBOT Server",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "gui.html",
+      "assets/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  },
+  "devDependencies": {
+    "electron": "^39.0.0",
+    "electron-builder": "^26.0.12"
+  }
+}

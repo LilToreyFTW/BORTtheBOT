@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BORTtheBOT Server Control</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            text-align: center;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .container {
+            flex: 1;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+        }
+
+        .status-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .status-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ef4444;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.running {
+            background: #10b981;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+
+        .btn-start:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+        }
+
+        .btn-stop:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(239, 68, 68, 0.3);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .info-item {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .info-label {
+            font-size: 12px;
+            opacity: 0.7;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .log-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .log-entry {
+            margin-bottom: 8px;
+            padding: 8px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .log-entry.error {
+            background: rgba(239, 68, 68, 0.2);
+            border-left: 3px solid #ef4444;
+        }
+
+        .log-entry.info {
+            border-left: 3px solid #3b82f6;
+        }
+
+        .log-entry.success {
+            border-left: 3px solid #10b981;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .quick-action-btn {
+            flex: 1;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .quick-action-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        a {
+            color: #60a5fa;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🤖 BORTtheBOT Server</h1>
+        <p>Robot Builder & Control System</p>
+    </div>
+
+    <div class="container">
+        <div class="status-card">
+            <div class="status-header">
+                <div class="status-indicator">
+                    <div class="status-dot" id="statusDot"></div>
+                    <h2 id="statusText">Server Stopped</h2>
+                </div>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Status</div>
+                    <div class="info-value" id="statusValue">Offline</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Port</div>
+                    <div class="info-value" id="portValue">3000</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">API Endpoint</div>
+                    <div class="info-value" id="apiUrl" style="font-size: 14px;">http://localhost:3000</div>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn-start" id="startBtn" onclick="startServer()">
+                    ▶ Start Server
+                </button>
+                <button class="btn-stop" id="stopBtn" onclick="stopServer()" disabled>
+                    ⏹ Stop Server
+                </button>
+            </div>
+
+            <div class="quick-actions">
+                <button class="quick-action-btn" onclick="openWebApp()">
+                    🌐 Open Web App
+                </button>
+                <button class="quick-action-btn" onclick="openAPI()">
+                    🔌 Open API
+                </button>
+                <button class="quick-action-btn" onclick="clearLogs()">
+                    🗑️ Clear Logs
+                </button>
+            </div>
+        </div>
+
+        <div class="status-card">
+            <h3 style="margin-bottom: 15px;">📋 Server Logs</h3>
+            <div class="log-container" id="logContainer">
+                <div class="log-entry info">Ready to start server...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let serverUrl = 'http://localhost:3000';
+        let isRunning = false;
+
+        // Initialize
+        window.electronAPI.getServerUrl().then(url => {
+            serverUrl = url;
+            document.getElementById('apiUrl').textContent = url;
+            document.getElementById('portValue').textContent = new URL(url).port || '3000';
+        });
+
+        // Event listeners
+        window.electronAPI.onServerOutput((data) => {
+            addLog(data, 'info');
+        });
+
+        window.electronAPI.onServerError((data) => {
+            addLog(data, 'error');
+        });
+
+        window.electronAPI.onServerStopped((code) => {
+            isRunning = false;
+            updateStatus(false);
+            addLog(`Server stopped (code: ${code})`, 'error');
+        });
+
+        // Functions
+        async function startServer() {
+            const btn = document.getElementById('startBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            btn.disabled = true;
+            
+            addLog('Starting server...', 'info');
+            const result = await window.electronAPI.startServer();
+            
+            if (result.success) {
+                isRunning = true;
+                updateStatus(true);
+                addLog(`Server started on port ${result.port}`, 'success');
+                stopBtn.disabled = false;
+            } else {
+                addLog(`Failed to start: ${result.message}`, 'error');
+                btn.disabled = false;
+            }
+        }
+
+        async function stopServer() {
+            const btn = document.getElementById('stopBtn');
+            const startBtn = document.getElementById('startBtn');
+            btn.disabled = true;
+            
+            addLog('Stopping server...', 'info');
+            const result = await window.electronAPI.stopServer();
+            
+            if (result.success) {
+                isRunning = false;
+                updateStatus(false);
+                addLog('Server stopped', 'error');
+                startBtn.disabled = false;
+            } else {
+                addLog(`Failed to stop: ${result.message}`, 'error');
+                btn.disabled = false;
+            }
+        }
+
+        function updateStatus(running) {
+            const dot = document.getElementById('statusDot');
+            const text = document.getElementById('statusText');
+            const value = document.getElementById('statusValue');
+            const startBtn = document.getElementById('startBtn');
+            const stopBtn = document.getElementById('stopBtn');
+
+            if (running) {
+                dot.classList.add('running');
+                text.textContent = 'Server Running';
+                value.textContent = 'Online';
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+            } else {
+                dot.classList.remove('running');
+                text.textContent = 'Server Stopped';
+                value.textContent = 'Offline';
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+            }
+
+            // Check status periodically
+            if (running) {
+                checkStatus();
+            }
+        }
+
+        async function checkStatus() {
+            if (!isRunning) return;
+            
+            const status = await window.electronAPI.checkServerStatus();
+            if (!status.running && isRunning) {
+                updateStatus(false);
+                addLog('Server connection lost', 'error');
+            }
+            
+            if (isRunning) {
+                setTimeout(checkStatus, 5000);
+            }
+        }
+
+        function addLog(message, type = 'info') {
+            const container = document.getElementById('logContainer');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message.trim()}`;
+            container.appendChild(entry);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function clearLogs() {
+            const container = document.getElementById('logContainer');
+            container.innerHTML = '<div class="log-entry info">Logs cleared...</div>';
+        }
+
+        function openWebApp() {
+            window.electronAPI.openExternal('http://localhost:3001');
+        }
+
+        function openAPI() {
+            window.electronAPI.openExternal(`${serverUrl}/trpc`);
+        }
+    </script>
+</body>
+</html>
+
