@@ -21,13 +21,14 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "@trpc/server": "catalog:",
-    "@trpc/client": "catalog:",
-    "hono": "catalog:",
-    "dotenv": "catalog:",
-    "zod": "catalog:",
-    "stripe": "^16.0.0",
     "@project/auth": "workspace:*",
-    "@project/db": "workspace:*"
+    "@project/db": "workspace:*",
+    "@trpc/client": "catalog:",
+    "@trpc/server": "catalog:",
+    "dotenv": "catalog:",
+    "drizzle-orm": "^0.44.7",
+    "hono": "catalog:",
+    "stripe": "^16.0.0",
+    "zod": "catalog:"
   }
 }
