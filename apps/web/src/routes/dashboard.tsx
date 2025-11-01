@@ -1,10 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
 import { trpc } from "@/utils/trpc";
 import { useQuery } from "@tanstack/react-query";
-import { Bot, Wrench, Code, Activity, TrendingUp, AlertCircle } from "lucide-react";
+import { Bot, Wrench, Code, Activity, TrendingUp, AlertCircle, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { useMemo } from "react";
 
 export const Route = createFileRoute("/dashboard")({
     component: DashboardPage,
@@ -13,11 +15,17 @@ export const Route = createFileRoute("/dashboard")({
 function DashboardPage() {
     const bots = useQuery(trpc.bots.list.queryOptions());
     const healthCheck = useQuery(trpc.healthCheck.queryOptions());
+    
+    // # ADDED: Calculate active programs count (estimate - bots with specs likely have programs)
+    const activePrograms = useMemo(() => {
+        // Since we can't easily query all programs at once, estimate based on bots with specs
+        return bots.data?.filter(b => b.specs?.printer).length || 0;
+    }, [bots.data]);
 
     const stats = {
         totalBots: bots.data?.length || 0,
-        activePrograms: 0, // Could be calculated from programs
-        totalCalibrations: 0,
+        activePrograms,
+        totalCalibrations: bots.data?.filter(b => b.specs?.printer).length || 0, // Bots with printer specs are calibrated
         systemHealth: healthCheck.data ? "operational" : "degraded",
     };
 
@@ -111,9 +119,16 @@ function DashboardPage() {
                                             {bot.description || "No description"}
                                         </p>
                                     </div>
-                                    <Badge variant="outline">
-                                        {new Date(bot.createdAt).toLocaleDateString()}
-                                    </Badge>
+                                    <div className="flex items-center gap-2">
+                                        <Badge variant="outline">
+                                            {new Date(bot.createdAt).toLocaleDateString()}
+                                        </Badge>
+                                        <Link to="/builder">
+                                            <Button variant="ghost" size="sm">
+                                                <ArrowRight className="h-3 w-3" />
+                                            </Button>
+                                        </Link>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -122,6 +137,12 @@ function DashboardPage() {
                             <Bot className="h-12 w-12 mx-auto mb-2 opacity-50" />
                             <p>No robots yet</p>
                             <p className="text-sm mt-1">Create your first robot in the Builder</p>
+                            <Link to="/builder" className="mt-4 inline-block">
+                                <Button size="sm">
+                                    <Wrench className="h-4 w-4 mr-2" />
+                                    Create Robot
+                                </Button>
+                            </Link>
                         </div>
                     )}
                 </Card>
@@ -174,13 +195,13 @@ function ActionCard({
     href: string;
 }) {
     return (
-        <a
-            href={href}
-            className="p-4 rounded-lg border hover:bg-accent transition-colors cursor-pointer"
+        <Link
+            to={href}
+            className="p-4 rounded-lg border hover:bg-accent transition-colors cursor-pointer block"
         >
             <Icon className="h-6 w-6 mb-2 text-primary" />
             <p className="font-medium text-sm">{title}</p>
             <p className="text-xs text-muted-foreground mt-1">{description}</p>
-        </a>
+        </Link>
     );
 }

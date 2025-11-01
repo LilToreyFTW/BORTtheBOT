@@ -1,10 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Search, Package, Wrench, Cpu, Zap } from "lucide-react";
+import { Search, Package, Wrench, Cpu, Zap, Info } from "lucide-react";
 import { useState } from "react";
 
 export const Route = createFileRoute("/components")({
@@ -60,6 +60,8 @@ const componentCategories = [
 
 function ComponentsPage() {
     const [searchQuery, setSearchQuery] = useState("");
+    const [selectedComponent, setSelectedComponent] = useState<{ name: string; specs: string; price: string; category: string } | null>(null);
+    const navigate = useNavigate();
 
     return (
         <div className="container mx-auto max-w-7xl p-6 space-y-6">
@@ -122,10 +124,23 @@ function ComponentsPage() {
                                         </div>
                                         <p className="text-sm text-muted-foreground mb-4">{item.specs}</p>
                                         <div className="flex gap-2">
-                                            <Button variant="outline" size="sm" className="flex-1">
-                                                View Details
+                                            <Button 
+                                                variant="outline" 
+                                                size="sm" 
+                                                className="flex-1"
+                                                onClick={() => setSelectedComponent({ ...item, category: category.name })}
+                                            >
+                                                <Info className="h-3 w-3 mr-1" />
+                                                Details
                                             </Button>
-                                            <Button size="sm" className="flex-1">
+                                            <Button 
+                                                size="sm" 
+                                                className="flex-1"
+                                                onClick={() => {
+                                                    // Navigate to builder to add component
+                                                    navigate({ to: "/builder" });
+                                                }}
+                                            >
                                                 Add to Build
                                             </Button>
                                         </div>
@@ -136,6 +151,52 @@ function ComponentsPage() {
                     );
                 })}
             </Tabs>
+            
+            {/* # ADDED: Component Details Modal */}
+            {selectedComponent && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <Card className="max-w-2xl w-full">
+                        <div className="p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-2xl font-semibold">{selectedComponent.name}</h2>
+                                <Button variant="ghost" size="sm" onClick={() => setSelectedComponent(null)}>×</Button>
+                            </div>
+                            <div className="space-y-4">
+                                <div>
+                                    <p className="text-sm text-muted-foreground mb-1">Category</p>
+                                    <Badge>{selectedComponent.category}</Badge>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-muted-foreground mb-1">Specifications</p>
+                                    <p className="text-sm">{selectedComponent.specs}</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-muted-foreground mb-1">Price</p>
+                                    <p className="text-lg font-semibold">{selectedComponent.price}</p>
+                                </div>
+                                <div className="flex gap-2 pt-4">
+                                    <Button 
+                                        className="flex-1"
+                                        onClick={() => {
+                                            navigate({ to: "/builder" });
+                                            setSelectedComponent(null);
+                                        }}
+                                    >
+                                        Add to Build
+                                    </Button>
+                                    <Button 
+                                        variant="outline" 
+                                        className="flex-1"
+                                        onClick={() => navigate({ to: "/store" })}
+                                    >
+                                        Purchase
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </Card>
+                </div>
+            )}
         </div>
     );
 }

@@ -2,12 +2,16 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { trpc } from "@/utils/trpc";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, useEffect } from "react";
 import { PrinterViewer } from "@/components/viewer/PrinterViewer";
 import { RobotBuilderSim } from "@/components/viewer/RobotBuilderSim";
 import { exportRobotAsFBX } from "@/components/viewer/exportFbx";
+import { Wrench, Plus, Trash2, Bot, Download } from "lucide-react";
 
 export const Route = createFileRoute("/builder")({
     component: BuilderPage,
@@ -309,35 +313,93 @@ function Field({ label, value, onChange }: { label: string; value: number; onCha
     );
 }
 
-// # ADDED: Minimal Python program editor and downloader
+// # UPDATED: Python program editor with loading existing programs
 function ProgramEditor({ botId }: { botId: string }) {
-    const [code, setCode] = useState("print('Hello from BORTtheBOT')\n");
-    const [programId] = useState(() => crypto.randomUUID());
+    const programsQuery = useQuery(trpc.programs.listByBot.queryOptions({ botId }));
+    const existingProgram = programsQuery.data?.[0];
+    const [programId, setProgramId] = useState<string>(() => existingProgram?.id ?? crypto.randomUUID());
+    
+    // # ADDED: Load existing program code or use default boilerplate
+    const defaultCode = `# BORTtheBOT Robot Program
+# Robot ID: ${botId}
+
+def main():
+    print("Starting BORTtheBOT Robot Program")
+    # Add your robot control code here
+    pass
+
+if __name__ == "__main__":
+    main()
+`;
+    const [code, setCode] = useState(defaultCode);
+    
+    // # ADDED: Load existing program when it's fetched
+    useEffect(() => {
+        if (existingProgram?.code) {
+            setCode(existingProgram.code);
+            setProgramId(existingProgram.id);
+        }
+    }, [existingProgram]);
+    
     const upsert = useMutation(trpc.programs.upsert.mutationOptions());
     const createToken = useMutation(trpc.programs.createDownloadToken.mutationOptions());
+    const removeProgram = useMutation(trpc.programs.remove.mutationOptions());
 
     const onSave = async () => {
         await upsert.mutateAsync({ id: programId, botId, language: "python", code });
-        alert("Saved program");
+        await programsQuery.refetch();
+        alert("Program saved successfully!");
     };
+    
     const onDownload = async () => {
+        // Save first, then download
         await upsert.mutateAsync({ id: programId, botId, language: "python", code });
         const { token } = await createToken.mutateAsync({ id: programId });
         window.location.href = `${import.meta.env.VITE_SERVER_URL ?? "http://localhost:3000"}/programs/${token}`;
     };
+    
+    const onDelete = async () => {
+        if (existingProgram && confirm("Delete this program?")) {
+            await removeProgram.mutateAsync({ id: programId });
+            setCode(defaultCode);
+            await programsQuery.refetch();
+        }
+    };
 
     return (
-        <div className="mt-2 rounded-md border p-2">
-            <div className="mb-1 text-xs font-medium">Program (Python)</div>
+        <div className="mt-2 rounded-md border p-4 space-y-3">
+            <div className="flex items-center justify-between">
+                <div className="text-sm font-medium">Program (Python)</div>
+                {existingProgram && (
+                    <Badge variant="outline" className="text-xs">
+                        Saved {new Date(existingProgram.updatedAt).toLocaleDateString()}
+                    </Badge>
+                )}
+            </div>
             <textarea
-                className="h-32 w-full resize-y rounded border bg-transparent p-2 text-xs font-mono"
+                className="h-64 w-full resize-y rounded border bg-transparent p-3 text-xs font-mono"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
+                placeholder="Enter your Python program code here..."
             />
-            <div className="mt-2 flex gap-2">
-                <Button size="sm" onClick={onSave}>Save Program</Button>
-                <Button size="sm" variant="secondary" onClick={onDownload}>Download .py</Button>
+            <div className="flex gap-2">
+                <Button size="sm" onClick={onSave} disabled={upsert.isPending}>
+                    {upsert.isPending ? "Saving..." : "Save Program"}
+                </Button>
+                <Button size="sm" variant="secondary" onClick={onDownload} disabled={createToken.isPending}>
+                    <Download className="h-3 w-3 mr-1" />
+                    Download .py
+                </Button>
+                {existingProgram && (
+                    <Button size="sm" variant="destructive" onClick={onDelete} disabled={removeProgram.isPending}>
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        Delete
+                    </Button>
+                )}
             </div>
+            {programsQuery.isLoading && (
+                <p className="text-xs text-muted-foreground">Loading program...</p>
+            )}
         </div>
     );
 }
