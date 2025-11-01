@@ -58953,6 +58953,7 @@ var logger2 = (fn = console.log) => {
 };
 
 // dist/index.js
+var import_meta = {};
 var __create3 = Object.create;
 var __defProp5 = Object.defineProperty;
 var __getOwnPropDesc3 = Object.getOwnPropertyDescriptor;
@@ -58987,13 +58988,19 @@ var __toESM3 = (mod, isNodeMode, target) => (target = mod != null ? __create3(__
   value: mod,
   enumerable: true
 }) : target, mod));
-var import_meta = { url: __filename };
-
+// pkg/node snapshot environment may not provide import_meta.url; provide a safe fallback
 var __require;
 try {
-  __require = /* @__PURE__ */ (0, import_node_module.createRequire)(process.cwd() || __filename);
+  __require = /* @__PURE__ */ (0, import_node_module.createRequire)(import_meta.url);
 } catch (e) {
-  __require = require;
+  // fallback to using current working directory or __filename if available
+  try {
+    var _fallbackPath = typeof __filename !== "undefined" ? __filename : process.cwd();
+    __require = (0, import_node_module.createRequire)(_fallbackPath);
+  } catch (e2) {
+    // last resort: use native require if available
+    __require = typeof require !== "undefined" ? require : function() { throw e2; };
+  }
 }
 var LibsqlError = class extends Error {
   /** Machine-readable error code. */
@@ -59741,6 +59748,32 @@ var require_libsql = /* @__PURE__ */ __commonJS3({ "../../node_modules/.bun/libs
           target = "linux-arm64-gnu";
           break;
       }
+    // When running inside a pkg-built executable, prefer loading the
+    // platform .node file from the on-disk node_modules directory next
+    // to the executable. pkg cannot load native .node files from its
+    // internal snapshot, so we attempt to load from filesystem first.
+    try {
+      if (typeof process !== "undefined" && process.pkg) {
+        try {
+          const path = __require('path');
+          const fs = __require('fs');
+          const dir = path.join(process.cwd(), 'node_modules', '@libsql', target);
+          const maybe = path.join(dir, 'index.node');
+          if (fs.existsSync(maybe)) {
+            // load() will call __require on dirname/index.node when present
+            const loaded = load(dir);
+            if (loaded)
+              return loaded;
+            // fallback: require the .node file directly by absolute path
+            return __require(maybe);
+          }
+        } catch (e) {
+          // continue to package-internal require below
+        }
+      }
+    } catch (e) {
+      // ignore and fall back
+    }
     return __require(`@libsql/${target}`);
   }
   const { databaseOpen, databaseOpenWithRpcSync, databaseInTransaction, databaseClose, databaseSyncSync, databaseSyncUntilSync, databaseExecSync, databasePrepareSync, databaseDefaultSafeIntegers, databaseLoadExtension, databaseMaxWriteReplicationIndex, statementRaw, statementIsReader, statementGet, statementRun, statementRowsSync, statementColumns, statementSafeIntegers, rowsNext } = requireNative();
