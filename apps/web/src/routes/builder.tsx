@@ -12,6 +12,7 @@ import { PrinterViewer } from "@/components/viewer/PrinterViewer";
 import { RobotBuilderSim } from "@/components/viewer/RobotBuilderSim";
 import { exportRobotAsFBX } from "@/components/viewer/exportFbx";
 import { Wrench, Plus, Trash2, Bot, Download } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/builder")({
     component: BuilderPage,
@@ -29,12 +30,22 @@ function BuilderPage() {
     const onCreate = useCallback(async () => {
         const name = nameRef.current?.value.trim() || "";
         const description = descRef.current?.value.trim() || undefined;
-        if (!name) return;
+        if (!name) {
+            toast.error("Please enter a robot name");
+            nameRef.current?.focus();
+            return;
+        }
         const id = crypto.randomUUID();
-        await createBot.mutateAsync({ id, name, description });
-        nameRef.current!.value = "";
-        if (descRef.current) descRef.current.value = "";
-        await bots.refetch();
+        try {
+            await createBot.mutateAsync({ id, name, description });
+            toast.success(`Robot "${name}" created successfully!`);
+            nameRef.current!.value = "";
+            if (descRef.current) descRef.current.value = "";
+            await bots.refetch();
+        } catch (error: any) {
+            console.error("Failed to create robot:", error);
+            toast.error(error?.message || "Failed to create robot. Please try again.");
+        }
     }, [createBot, bots]);
 
     const onDelete = useCallback(
@@ -65,10 +76,33 @@ function BuilderPage() {
                     <h2 className="text-xl font-semibold">Create New Robot</h2>
                 </div>
                 <Separator className="mb-4" />
-                <div className="flex flex-wrap items-center gap-3">
-                    <Input ref={nameRef} placeholder="Robot name" className="w-64" />
-                    <Input ref={descRef} placeholder="Description (optional)" className="w-80" />
-                    <Button onClick={onCreate} disabled={createBot.isPending}>
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        onCreate();
+                    }}
+                    className="flex flex-wrap items-center gap-3"
+                >
+                    <Input 
+                        ref={nameRef} 
+                        placeholder="Robot name" 
+                        className="w-64" 
+                        required
+                        disabled={createBot.isPending}
+                    />
+                    <Input 
+                        ref={descRef} 
+                        placeholder="Description (optional)" 
+                        className="w-80"
+                        disabled={createBot.isPending}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                                e.preventDefault();
+                                onCreate();
+                            }
+                        }}
+                    />
+                    <Button type="submit" disabled={createBot.isPending}>
                         {createBot.isPending ? (
                             <>Creating...</>
                         ) : (
@@ -78,7 +112,7 @@ function BuilderPage() {
                             </>
                         )}
                     </Button>
-                </div>
+                </form>
             </Card>
 
             {/* Robots Grid */}

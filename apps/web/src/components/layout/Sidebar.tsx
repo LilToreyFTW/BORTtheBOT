@@ -10,7 +10,8 @@ import {
     Code, 
     Bot,
     FileText,
-    Package
+    Package,
+    Factory
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +33,12 @@ const navigation = [
         label: "Robot Builder", 
         to: "/builder", 
         description: "Build and configure robots"
+    },
+    { 
+        icon: Factory, 
+        label: "3D Array Viewer", 
+        to: "/array-viewer", 
+        description: "View 8-printer industrial array"
     },
     { 
         icon: Code, 

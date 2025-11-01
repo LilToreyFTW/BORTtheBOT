@@ -24,11 +24,23 @@ const specsSchema = z.object({
     printer: printerSchema,
 });
 
+// # UPDATED: Default specs with full printer configuration
+const defaultSpecs = {
+    type: "generic",
+    version: "1.0",
+    printer: {
+        enclosureCm: { w: 100, h: 120, d: 100 },
+        basePlateMm: { w: 900, d: 900, h: 900 },
+        downwardLasers: { count: 8 as const, footprintCm: { w: 5, d: 5, h: 10 } },
+        roofSphere: { grid: [9, 9, 9] as const, singleEmitterSizeCm: { w: 2, h: 2, d: 2 } },
+    },
+};
+
 const botCreateSchema = z.object({
     id: z.string().min(1),
     name: z.string().min(1),
     description: z.string().optional(),
-    specs: specsSchema.default({ type: "generic", version: "1.0" }),
+    specs: specsSchema.default(defaultSpecs),
 });
 
 export const botsRouter = router({
@@ -181,6 +193,87 @@ export const botsRouter = router({
         await db.delete(botTable).where(eq(botTable.id, input.id));
         return { ok: true };
     }),
+    // # ADDED: Calibrate all printers in array simultaneously
+    calibrateArray: publicProcedure.mutation(async () => {
+        const rows = await db.select().from(botTable);
+        const calibrations = rows.map((row) => {
+            const specs = specsSchema.parse(JSON.parse(row.specsJson));
+            const plateWcm = specs.printer.basePlateMm.w / 10;
+            const plateDcm = specs.printer.basePlateMm.d / 10;
+
+            const fpW = specs.printer.downwardLasers.footprintCm.w;
+            const fpD = specs.printer.downwardLasers.footprintCm.d;
+            const marginW = (plateWcm - fpW) / 2;
+            const marginD = (plateDcm - fpD) / 2;
+            const safe = marginW >= 0 && marginD >= 0;
+
+            const laserPositions = Array.from({ length: specs.printer.downwardLasers.count }, (_, i) => {
+                const x = (plateWcm / (specs.printer.downwardLasers.count - 1)) * i - plateWcm / 2;
+                const y = specs.printer.enclosureCm.h;
+                const z = 0;
+                return { index: i, xCm: x, yCm: y, zCm: z };
+            });
+
+            const plateSizeCm = 90;
+            const armRotations = Array.from({ length: specs.printer.downwardLasers.count }, (_, i) => {
+                const baseYaw = (i * Math.PI / 4);
+                return {
+                    index: i,
+                    shoulderYaw: baseYaw,
+                    shoulderPitch: Math.PI / 4,
+                    elbow: 0,
+                    wristYaw: 0,
+                    wristPitch: 0,
+                };
+            });
+
+            return {
+                botId: row.id,
+                ok: true as const,
+                safe,
+                plateWcm,
+                plateDcm,
+                marginsCm: { w: Math.max(0, marginW), d: Math.max(0, marginD) },
+                downwardArray: laserPositions,
+                armRotations,
+            };
+        });
+
+        return {
+            ok: true,
+            printers: calibrations,
+            totalPrinters: calibrations.length,
+            allSafe: calibrations.every((c) => c.safe),
+        };
+    }),
+    // # ADDED: Start printing on all printers in array
+    startArrayPrint: publicProcedure
+        .input(z.object({ 
+            targetData: z.string().optional(), // JSON string of 3D model data
+            permanenceCode: z.string().optional(), // Optional permanence code for indefinite prints
+        }))
+        .mutation(async ({ input }) => {
+            const rows = await db.select().from(botTable);
+            const printJobs = rows.map((row) => {
+                const specs = specsSchema.parse(JSON.parse(row.specsJson));
+                return {
+                    botId: row.id,
+                    status: "printing" as const,
+                    progress: 0,
+                    permanenceCode: input.permanenceCode || null,
+                    expiresAt: input.permanenceCode 
+                        ? null 
+                        : new Date(Date.now() + (29 * 60 * 1000) + Math.random() * 60 * 1000), // 29-30 minutes
+                };
+            });
+
+            return {
+                ok: true,
+                printJobs,
+                totalPrinters: printJobs.length,
+                hasPermanenceCode: !!input.permanenceCode,
+            };
+        }),
 });
 
 
