@@ -6,6 +6,8 @@ const path = require('path');
 let mainWindow;
 let serverProcess = null;
 const SERVER_PORT = 3000;
+// # UPDATED: Use WireGuard tunnel IP for robot printer network
+const SERVER_HOST = process.env.HOST || '10.2.0.2';
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -72,7 +74,12 @@ ipcMain.handle('start-server', async () => {
     serverProcess = spawn('bun', ['run', launcherPath], {
       cwd: appPath,
       shell: true,
-      env: { ...process.env, PORT: SERVER_PORT.toString() }
+      env: { 
+        ...process.env, 
+        PORT: SERVER_PORT.toString(),
+        HOST: SERVER_HOST,
+        CORS_ORIGIN: `http://${SERVER_HOST}:3001,http://${SERVER_HOST}:3000,http://localhost:3001,http://localhost:3000`
+      }
     });
 
     let output = '';
@@ -129,7 +136,7 @@ ipcMain.handle('check-server-status', async () => {
   }
 
   try {
-    const response = await fetch(`http://localhost:${SERVER_PORT}`);
+    const response = await fetch(`http://${SERVER_HOST}:${SERVER_PORT}`);
     return { running: response.ok };
   } catch {
     return { running: false };
@@ -137,6 +144,10 @@ ipcMain.handle('check-server-status', async () => {
 });
 
 ipcMain.handle('get-server-url', () => {
-  return `http://localhost:${SERVER_PORT}`;
+  return `http://${SERVER_HOST}:${SERVER_PORT}`;
+});
+
+ipcMain.handle('get-server-host', () => {
+  return SERVER_HOST;
 });
 

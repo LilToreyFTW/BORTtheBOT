@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   stopServer: () => ipcRenderer.invoke('stop-server'),
   checkServerStatus: () => ipcRenderer.invoke('check-server-status'),
   getServerUrl: () => ipcRenderer.invoke('get-server-url'),
+  getServerHost: () => ipcRenderer.invoke('get-server-host'),
   onServerOutput: (callback) => {
     ipcRenderer.on('server-output', (_, data) => callback(data));
     return () => ipcRenderer.removeAllListeners('server-output');

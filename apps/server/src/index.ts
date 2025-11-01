@@ -17,10 +17,22 @@ app.use(logger());
 app.use(
 	"/*",
 	cors({
-		origin: process.env.CORS_ORIGIN || "",
-		allowMethods: ["GET", "POST", "OPTIONS"],
-		allowHeaders: ["Content-Type", "Authorization"],
+		// # UPDATED: Allow access from WireGuard network and localhost
+		origin: process.env.CORS_ORIGIN 
+			? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
+			: [
+				"http://10.2.0.2:3001",
+				"http://10.2.0.2:3000",
+				"http://localhost:3001",
+				"http://localhost:3000",
+				"http://127.0.0.1:3001",
+				"http://127.0.0.1:3000",
+				"*" // Allow all origins for WireGuard network devices
+			],
+		allowMethods: ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
+		allowHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
 		credentials: true,
+		exposeHeaders: ["Content-Length", "Content-Disposition"],
 	}),
 );
 
@@ -47,8 +59,8 @@ app.get("/programs/:token", async (c) => {
     const programId = token.split(".")[0];
     if (!programId) return c.text("Bad token", 400);
     const rows = await db.select().from(botProgram).where(eq(botProgram.id, programId));
-    if (!rows.length) return c.text("Not found", 404);
-    const p = rows[0];
+    if (!rows.length || !rows[0]) return c.text("Not found", 404);
+    const p = rows[0]!;
     const filename = `bot_${p.botId}.${p.language === "python" ? "py" : "txt"}`;
     c.header("Content-Type", "text/plain; charset=utf-8");
     c.header("Content-Disposition", `attachment; filename=\"${filename}\"`);
